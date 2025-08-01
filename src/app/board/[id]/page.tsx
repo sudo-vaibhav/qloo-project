@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
+import ClothingItemLightbox from "@/components/ClothingItemLightbox";
 
 interface ClothingItem {
   name: string;
@@ -47,6 +48,8 @@ export default function StyleBoardDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoritingLoading, setFavoritingLoading] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
 
   const fetchStyleBoard = useCallback(
     async (id: string) => {
@@ -109,6 +112,15 @@ export default function StyleBoardDetail() {
     } finally {
       setFavoritingLoading(false);
     }
+  };
+
+  const openLightbox = (index: number) => {
+    setSelectedItemIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
   };
 
   useEffect(() => {
@@ -247,9 +259,10 @@ export default function StyleBoardDetail() {
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       {styleBoard.clothingItems.map((item, index) => (
-                        <div
+                        <button
                           key={index}
-                          className="flex gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl"
+                          onClick={() => openLightbox(index)}
+                          className="flex gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer text-left"
                         >
                           <div className="flex-shrink-0">
                             <Image
@@ -272,8 +285,11 @@ export default function StyleBoardDetail() {
                             <p className="text-sm text-gray-600 leading-relaxed">
                               {item.description}
                             </p>
+                            <p className="text-xs text-purple-600 mt-2 font-medium">
+                              Click to view details →
+                            </p>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -407,6 +423,16 @@ export default function StyleBoardDetail() {
           </div>
         </div>
       </main>
+
+      {/* Lightbox */}
+      {styleBoard && styleBoard.clothingItems && (
+        <ClothingItemLightbox
+          items={styleBoard.clothingItems}
+          initialIndex={selectedItemIndex}
+          isOpen={lightboxOpen}
+          onClose={closeLightbox}
+        />
+      )}
     </div>
   );
 }

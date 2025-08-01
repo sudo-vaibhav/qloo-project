@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { Sparkles, Calendar, Tag, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { Sparkles, Calendar, Tag, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
 interface ClothingItem {
   name: string;
@@ -38,13 +38,21 @@ export default function SharedStyleBoard() {
 
   const fetchSharedStyleBoard = async (shareId: string) => {
     try {
+      console.log("Fetching shared style board with shareId:", shareId);
       const response = await fetch(`/api/styleboards/${shareId}`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("Successfully fetched style board:", data);
         setStyleBoard(data.styleBoard);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("Failed to fetch style board:", response.status, errorData);
+        setStyleBoard(null);
       }
     } catch (error) {
-      console.error('Error fetching shared style board:', error);
+      console.error("Error fetching shared style board:", error);
+      setStyleBoard(null);
     } finally {
       setLoading(false);
     }
@@ -63,8 +71,12 @@ export default function SharedStyleBoard() {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <Sparkles className="h-16 w-16 text-purple-300 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Style Board Not Found</h2>
-          <p className="text-gray-600 mb-8">This style board may have been removed or the link is invalid.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Style Board Not Found
+          </h2>
+          <p className="text-gray-600 mb-8">
+            This style board may have been removed or the link is invalid.
+          </p>
           <Link
             href="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
@@ -85,7 +97,9 @@ export default function SharedStyleBoard() {
             <div className="flex items-center gap-3">
               <Sparkles className="h-8 w-8 text-purple-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">TasteTailor</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  TasteTailor
+                </h1>
                 <p className="text-sm text-gray-600">Shared Style Board</p>
               </div>
             </div>
@@ -115,44 +129,45 @@ export default function SharedStyleBoard() {
               </div>
 
               {/* Clothing Items Section */}
-              {styleBoard.clothingItems && styleBoard.clothingItems.length > 0 && (
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Curated Style Pieces
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    {styleBoard.clothingItems.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl"
-                      >
-                        <div className="flex-shrink-0">
-                          <Image
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="w-20 h-20 object-cover rounded-lg border border-white/50"
-                            width={80}
-                            height={80}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900">
-                              {item.name}
-                            </h4>
-                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                              {item.category}
-                            </span>
+              {styleBoard.clothingItems &&
+                styleBoard.clothingItems.length > 0 && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Curated Style Pieces
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {styleBoard.clothingItems.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl"
+                        >
+                          <div className="flex-shrink-0">
+                            <Image
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-20 h-20 object-cover rounded-lg border border-white/50"
+                              width={80}
+                              height={80}
+                            />
                           </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">
-                            {item.description}
-                          </p>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-gray-900">
+                                {item.name}
+                              </h4>
+                              <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                                {item.category}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                              {item.description}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             {/* Content Section */}
@@ -161,22 +176,29 @@ export default function SharedStyleBoard() {
                 <div className="flex items-start gap-3 mb-4">
                   <Sparkles className="h-6 w-6 text-purple-600 mt-1" />
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{styleBoard.title}</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                      {styleBoard.title}
+                    </h1>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {new Date(styleBoard.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {new Date(styleBoard.createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="prose prose-gray max-w-none mb-6">
-                  <p className="text-gray-700 leading-relaxed">{styleBoard.narrative}</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    {styleBoard.narrative}
+                  </p>
                 </div>
 
                 {/* Tags */}
@@ -184,7 +206,9 @@ export default function SharedStyleBoard() {
                   <div className="mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <Tag className="h-4 w-4 text-gray-600" />
-                      <span className="text-sm font-medium text-gray-700">Style Tags</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        Style Tags
+                      </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {styleBoard.tags.map((tag, index) => (
@@ -201,7 +225,9 @@ export default function SharedStyleBoard() {
 
                 {/* Cultural Influences */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Cultural Influences</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Cultural Influences
+                  </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {styleBoard.tastesInput.map((taste, index) => (
                       <div
@@ -219,7 +245,8 @@ export default function SharedStyleBoard() {
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white text-center">
                 <h3 className="text-2xl font-bold mb-4">Love this style?</h3>
                 <p className="mb-6 opacity-90">
-                  Create your own personalized style board with TasteTailor&apos;s AI-powered taste analysis.
+                  Create your own personalized style board with
+                  TasteTailor&apos;s AI-powered taste analysis.
                 </p>
                 <Link
                   href="/"

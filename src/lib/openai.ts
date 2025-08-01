@@ -22,11 +22,14 @@ const MODEL_CONFIG = {
 };
 
 // Check model compatibility
-const isStructuredOutputSupported = MODEL_CONFIG.main.includes('gpt-4') || MODEL_CONFIG.main.includes('o1');
-const isQualitySupported = MODEL_CONFIG.image === 'dall-e-3';
+const isStructuredOutputSupported =
+  MODEL_CONFIG.main.includes("gpt-4") || MODEL_CONFIG.main.includes("o1");
+const isQualitySupported = MODEL_CONFIG.image === "dall-e-3";
 
 // Use compatible model for structured output if needed
-const structuredOutputModel = isStructuredOutputSupported ? MODEL_CONFIG.main : 'gpt-4o-mini';
+const structuredOutputModel = isStructuredOutputSupported
+  ? MODEL_CONFIG.main
+  : "gpt-4o-mini";
 
 // Log the current model configuration
 console.log("🤖 Model Configuration:", {
@@ -35,7 +38,9 @@ console.log("🤖 Model Configuration:", {
   stepNameModel: MODEL_CONFIG.stepName,
   imageModel: MODEL_CONFIG.image,
   imageSize: MODEL_CONFIG.imageSize,
-  imageQuality: isQualitySupported ? MODEL_CONFIG.imageQuality : 'N/A (DALL-E 2)',
+  imageQuality: isQualitySupported
+    ? MODEL_CONFIG.imageQuality
+    : "N/A (DALL-E 2)",
   clothingItems: `${MODEL_CONFIG.clothingItemsMin}-${MODEL_CONFIG.clothingItemsMax} items`,
 });
 

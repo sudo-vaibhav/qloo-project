@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import dbConnect from "@/lib/db";
 import StyleBoard from "@/models/StyleBoard";
 import { nanoid } from "nanoid";
+import mongoose from "mongoose";
 
 export async function GET(
   request: NextRequest,
@@ -12,18 +13,36 @@ export async function GET(
     const { id } = await params;
     const { userId } = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    console.log("API: Looking for styleBoard with ID/shareId:", id);
+    console.log("API: User ID:", userId);
 
     await dbConnect();
 
-    const styleBoard = await StyleBoard.findOne({
-      $or: [
-        { _id: id, userId },
-        { shareId: id, isPublic: true },
-      ],
-    });
+    // Check if the id is a valid MongoDB ObjectId
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
+    console.log("API: Is valid ObjectId:", isValidObjectId);
+
+    // Build query based on whether user is authenticated
+    let query: Record<string, unknown>;
+    if (userId) {
+      // Authenticated user can see their own boards or public shared boards
+      const orConditions: Record<string, unknown>[] = [{ shareId: id, isPublic: true }];
+      
+      // Only add _id condition if the id is a valid ObjectId
+      if (isValidObjectId) {
+        orConditions.unshift({ _id: id, userId });
+      }
+      
+      query = { $or: orConditions };
+    } else {
+      // Unauthenticated user can only see public shared boards by shareId
+      query = { shareId: id, isPublic: true };
+    }
+
+    console.log("API: Query:", JSON.stringify(query));
+
+    const styleBoard = await StyleBoard.findOne(query);
+    console.log("API: Found styleBoard:", !!styleBoard);
 
     if (!styleBoard) {
       return NextResponse.json(
