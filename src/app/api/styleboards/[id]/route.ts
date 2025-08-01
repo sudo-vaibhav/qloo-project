@@ -19,20 +19,23 @@ export async function GET(
     await dbConnect();
 
     // Check if the id is a valid MongoDB ObjectId
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
+    const isValidObjectId =
+      mongoose.Types.ObjectId.isValid(id) && /^[0-9a-fA-F]{24}$/.test(id);
     console.log("API: Is valid ObjectId:", isValidObjectId);
 
     // Build query based on whether user is authenticated
     let query: Record<string, unknown>;
     if (userId) {
       // Authenticated user can see their own boards or public shared boards
-      const orConditions: Record<string, unknown>[] = [{ shareId: id, isPublic: true }];
-      
+      const orConditions: Record<string, unknown>[] = [
+        { shareId: id, isPublic: true },
+      ];
+
       // Only add _id condition if the id is a valid ObjectId
       if (isValidObjectId) {
         orConditions.unshift({ _id: id, userId });
       }
-      
+
       query = { $or: orConditions };
     } else {
       // Unauthenticated user can only see public shared boards by shareId

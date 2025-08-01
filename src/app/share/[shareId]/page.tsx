@@ -40,14 +40,20 @@ export default function SharedStyleBoard() {
     try {
       console.log("Fetching shared style board with shareId:", shareId);
       const response = await fetch(`/api/styleboards/${shareId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log("Successfully fetched style board:", data);
         setStyleBoard(data.styleBoard);
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Failed to fetch style board:", response.status, errorData);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        console.error(
+          "Failed to fetch style board:",
+          response.status,
+          errorData
+        );
         setStyleBoard(null);
       }
     } catch (error) {
