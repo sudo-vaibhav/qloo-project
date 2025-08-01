@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Sparkles, Calendar, Tag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+
+interface ClothingItem {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+}
 
 interface StyleBoard {
   id: string;
@@ -11,6 +19,7 @@ interface StyleBoard {
   description: string;
   narrative: string;
   imageUrl: string;
+  clothingItems?: ClothingItem[];
   tags: string[];
   tastesInput: string[];
   createdAt: string;
@@ -96,12 +105,54 @@ export default function SharedStyleBoard() {
             {/* Image Section */}
             <div className="space-y-4">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden">
-                <img
+                <Image
                   src={styleBoard.imageUrl}
                   alt={styleBoard.title}
                   className="w-full aspect-square object-cover"
+                  width={600}
+                  height={600}
                 />
               </div>
+
+              {/* Clothing Items Section */}
+              {styleBoard.clothingItems && styleBoard.clothingItems.length > 0 && (
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Curated Style Pieces
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    {styleBoard.clothingItems.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl"
+                      >
+                        <div className="flex-shrink-0">
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-20 h-20 object-cover rounded-lg border border-white/50"
+                            width={80}
+                            height={80}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900">
+                              {item.name}
+                            </h4>
+                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                              {item.category}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Content Section */}

@@ -3,6 +3,42 @@ import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import OpenAI from "openai";
 
+// Model configuration from environment variables
+const MODEL_CONFIG = {
+  main: process.env.OPENAI_TEXT_MODEL || "gpt-3.5-turbo",
+  stepName: process.env.OPENAI_STEP_NAME_MODEL || "gpt-3.5-turbo",
+  image: (process.env.OPENAI_IMAGE_MODEL || "dall-e-2") as
+    | "dall-e-2"
+    | "dall-e-3",
+  imageSize: (process.env.OPENAI_IMAGE_SIZE || "512x512") as
+    | "256x256"
+    | "512x512"
+    | "1024x1024",
+  imageQuality: (process.env.OPENAI_IMAGE_QUALITY || "standard") as
+    | "standard"
+    | "hd",
+  clothingItemsMin: parseInt(process.env.CLOTHING_ITEMS_MIN || "2"),
+  clothingItemsMax: parseInt(process.env.CLOTHING_ITEMS_MAX || "3"),
+};
+
+// Check model compatibility
+const isStructuredOutputSupported = MODEL_CONFIG.main.includes('gpt-4') || MODEL_CONFIG.main.includes('o1');
+const isQualitySupported = MODEL_CONFIG.image === 'dall-e-3';
+
+// Use compatible model for structured output if needed
+const structuredOutputModel = isStructuredOutputSupported ? MODEL_CONFIG.main : 'gpt-4o-mini';
+
+// Log the current model configuration
+console.log("🤖 Model Configuration:", {
+  textModel: MODEL_CONFIG.main,
+  structuredOutputModel: structuredOutputModel,
+  stepNameModel: MODEL_CONFIG.stepName,
+  imageModel: MODEL_CONFIG.image,
+  imageSize: MODEL_CONFIG.imageSize,
+  imageQuality: isQualitySupported ? MODEL_CONFIG.imageQuality : 'N/A (DALL-E 2)',
+  clothingItems: `${MODEL_CONFIG.clothingItemsMin}-${MODEL_CONFIG.clothingItemsMax} items`,
+});
+
 // OpenAI client for image generation (still needed for DALL-E)
 const openaiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -14,6 +50,13 @@ interface FashionEntity {
   category?: string;
 }
 
+interface ClothingItem {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+}
+
 interface StyleGenerationResult {
   narrative: string;
   visualPrompt: string;
@@ -21,6 +64,7 @@ interface StyleGenerationResult {
   clothingRecommendations: string[];
   colorPalette: string[];
   styleArchetype: string;
+  clothingItems: ClothingItem[];
 }
 
 interface ProgressCallback {
@@ -35,7 +79,7 @@ class StepNameGenerator {
   ): Promise<string> {
     try {
       const result = await generateText({
-        model: openai("gpt-3.5-turbo"),
+        model: openai(MODEL_CONFIG.stepName),
         prompt: `Generate a creative, engaging step name for this fashion analysis phase:
 
 Step Type: ${stepType}
@@ -115,11 +159,38 @@ const VisualPromptSchema = z.object({
   composition: z.string().describe("Layout and composition guidelines"),
 });
 
+const ClothingItemsSchema = z.object({
+  clothingItems: z
+    .array(
+      z.object({
+        name: z.string().describe("Short, catchy name for the clothing item"),
+        description: z
+          .string()
+          .describe("Brief description of the item and why it fits the style"),
+        category: z
+          .string()
+          .describe(
+            "Category like 'Top', 'Bottom', 'Footwear', 'Accessory', 'Outerwear'"
+          ),
+      })
+    )
+    .min(MODEL_CONFIG.clothingItemsMin)
+    .max(MODEL_CONFIG.clothingItemsMax)
+    .describe(
+      `${MODEL_CONFIG.clothingItemsMin}-${MODEL_CONFIG.clothingItemsMax} carefully curated clothing items that define this style`
+    ),
+  reasoning: z
+    .string()
+    .describe(
+      "Brief explanation of how these items work together as a cohesive style"
+    ),
+});
+
 // Fashion Style Analyst Agent
 class FashionAnalystAgent {
   async analyze(tastesInput: string[], fashionEntities: FashionEntity[]) {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: openai(structuredOutputModel),
       schema: FashionAnalysisSchema,
       prompt: `As a professional fashion analyst, analyze these cultural tastes and fashion correlations to identify core style elements:
 
@@ -143,7 +214,7 @@ Provide:
 class ColorCuratorAgent {
   async curate(tastesInput: string[], fashionAnalysis: string) {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: openai(structuredOutputModel),
       schema: ColorPaletteSchema,
       prompt: `As a color theory expert and aesthetic curator, create a cohesive color palette and aesthetic direction:
 
@@ -171,7 +242,7 @@ class StyleStorytellerAgent {
     colorInfo: { palette: string[]; aesthetic: string; colorPsychology: string }
   ) {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: openai(structuredOutputModel),
       schema: StyleNarrativeSchema,
       prompt: `As a fashion storyteller, craft a compelling personal style narrative:
 
@@ -204,7 +275,7 @@ class VisualPromptAgent {
     aesthetic: string
   ) {
     const result = await generateObject({
-      model: openai("gpt-4o"),
+      model: openai(structuredOutputModel),
       schema: VisualPromptSchema,
       prompt: `As a visual art director, create a detailed prompt for generating a fashion mood board:
 
@@ -220,6 +291,47 @@ Create:
 3. Layout and composition guidelines for the mood board`,
       system:
         "You are a visual art director specializing in fashion photography and mood board creation. Create detailed, artistic prompts that capture style essence.",
+    });
+
+    return result.object;
+  }
+}
+
+// Clothing Curator Agent
+class ClothingCuratorAgent {
+  async curate(
+    tastesInput: string[],
+    fashionAnalysis: string,
+    clothingRecommendations: string[],
+    colorPalette: string[],
+    aesthetic: string
+  ) {
+    const result = await generateObject({
+      model: openai(structuredOutputModel),
+      schema: ClothingItemsSchema,
+      prompt: `As a professional fashion stylist and curator, select ${
+        MODEL_CONFIG.clothingItemsMin
+      }-${
+        MODEL_CONFIG.clothingItemsMax
+      } specific clothing items that perfectly embody this style:
+
+Cultural Tastes: ${tastesInput.join(", ")}
+Fashion Analysis: ${fashionAnalysis}
+General Clothing Categories: ${clothingRecommendations.join(", ")}
+Color Palette: ${colorPalette.join(", ")}
+Style Aesthetic: ${aesthetic}
+
+Curate ${MODEL_CONFIG.clothingItemsMin}-${
+        MODEL_CONFIG.clothingItemsMax
+      } specific clothing items that work together as a cohesive wardrobe. Each item should be:
+- Specific and detailed (not just "dress" but "midi wrap dress with geometric print")
+- Aligned with the cultural tastes and aesthetic
+- Part of a balanced outfit selection across different categories
+- Unique and distinctive to this particular style identity
+
+Focus on creating a diverse but cohesive selection that tells the complete style story.`,
+      system:
+        "You are a world-renowned fashion stylist and curator with expertise in cultural fashion and personal style development. Create specific, detailed clothing selections that form cohesive style narratives.",
     });
 
     return result.object;
@@ -243,6 +355,7 @@ export async function generateStyleNarrative(
     const colorCurator = new ColorCuratorAgent();
     const styleStoryteller = new StyleStorytellerAgent();
     const visualPromptAgent = new VisualPromptAgent();
+    const clothingCurator = new ClothingCuratorAgent();
     const stepGenerator = new StepNameGenerator();
 
     // Step 1: Fashion Analysis
@@ -252,7 +365,7 @@ export async function generateStyleNarrative(
     );
     onProgress?.(
       stepName1,
-      25,
+      15,
       "Analyzing your cultural tastes and fashion correlations..."
     );
 
@@ -266,7 +379,7 @@ export async function generateStyleNarrative(
       "color-curation",
       tastesInput
     );
-    onProgress?.(stepName2, 50, "Creating your personalized color palette...");
+    onProgress?.(stepName2, 30, "Creating your personalized color palette...");
 
     const { palette, aesthetic, colorPsychology } = await colorCurator.curate(
       tastesInput,
@@ -278,7 +391,7 @@ export async function generateStyleNarrative(
       "storytelling",
       tastesInput
     );
-    onProgress?.(stepName3, 75, "Crafting your unique style narrative...");
+    onProgress?.(stepName3, 45, "Crafting your unique style narrative...");
 
     const { title, narrative } = await styleStoryteller.craft(
       tastesInput,
@@ -287,12 +400,27 @@ export async function generateStyleNarrative(
       { palette, aesthetic, colorPsychology }
     );
 
-    // Step 4: Visual Prompt Design
+    // Step 4: Clothing Curation
+    onProgress?.(
+      "Curating Your Wardrobe",
+      60,
+      "Selecting specific clothing pieces..."
+    );
+
+    const clothingSelection = await clothingCurator.curate(
+      tastesInput,
+      fashionAnalysis.analysis,
+      fashionAnalysis.recommendations,
+      palette,
+      aesthetic
+    );
+
+    // Step 5: Visual Prompt Design
     const stepName4 = await stepGenerator.generateStepName(
       "visual-design",
       tastesInput
     );
-    onProgress?.(stepName4, 90, "Designing your fashion mood board...");
+    onProgress?.(stepName4, 75, "Designing your fashion mood board...");
 
     const visualPromptResult = await visualPromptAgent.design(
       title,
@@ -300,6 +428,41 @@ export async function generateStyleNarrative(
       palette,
       fashionAnalysis.recommendations,
       aesthetic
+    );
+
+    // Step 6: Generate Individual Clothing Item Images
+    onProgress?.(
+      "Creating Style Visuals",
+      85,
+      "Generating images for each clothing piece..."
+    );
+
+    const clothingItemsWithImages = await Promise.all(
+      clothingSelection.clothingItems.map(async (item, index) => {
+        try {
+          const imageUrl = await generateClothingItemImage(
+            item.name,
+            item.description,
+            palette,
+            aesthetic
+          );
+          onProgress?.(
+            "Creating Style Visuals",
+            85 + (index + 1) * 3,
+            `Generated ${item.name}...`
+          );
+          return {
+            ...item,
+            imageUrl,
+          };
+        } catch (error) {
+          console.error(`Error generating image for ${item.name}:`, error);
+          return {
+            ...item,
+            imageUrl: "/placeholder-clothing.svg", // Fallback image
+          };
+        }
+      })
     );
 
     onProgress?.(
@@ -315,6 +478,7 @@ export async function generateStyleNarrative(
       clothingRecommendations: fashionAnalysis.recommendations,
       colorPalette: palette,
       styleArchetype: aesthetic,
+      clothingItems: clothingItemsWithImages,
     };
   } catch (error) {
     console.error("Error in agentic style generation:", error);
@@ -339,6 +503,27 @@ export async function generateStyleNarrative(
         "#DDA0DD - Plum",
       ],
       styleArchetype: "Cultural Modern",
+      clothingItems: [
+        {
+          name: "Statement Jacket",
+          description:
+            "A culturally-inspired jacket that serves as the centerpiece of your style",
+          category: "Outerwear",
+          imageUrl: "/placeholder-clothing.svg",
+        },
+        {
+          name: "Classic Foundation Piece",
+          description: "Essential basic that anchors your cultural aesthetic",
+          category: "Top",
+          imageUrl: "/placeholder-clothing.svg",
+        },
+        {
+          name: "Cultural Accessory",
+          description: "Distinctive accessory that tells your cultural story",
+          category: "Accessory",
+          imageUrl: "/placeholder-clothing.svg",
+        },
+      ],
     };
   }
 }
@@ -347,15 +532,21 @@ export async function generateStyleImage(
   visualPrompt: string
 ): Promise<string> {
   try {
-    const response = await openaiClient.images.generate({
-      model: "dall-e-3",
-      prompt: `Create a sophisticated fashion mood board and style collage: ${visualPrompt}. The image should be clean, well-organized, and visually appealing, showing clothing items, accessories, and fashion elements arranged in an aesthetic grid or collage format. Focus on fashion and clothing rather than home decor.`,
+    const baseParams = {
+      model: MODEL_CONFIG.image,
+      prompt: `Create a sophisticated fashion mood board and style collage: ${visualPrompt}. The image should be clean, well-organized, and visually appealing, showing clothing items, accessories, and fashion elements arranged in an aesthetic grid or collage format. Focus on fashion and clothing rather than home decor. DO NOT include any text, labels, words, or written content in the image. Only show visual fashion elements, clothing, accessories, and style elements without any typography or text overlays.`,
       n: 1,
-      size: "1024x1024",
-      quality: "hd",
-      response_format: "b64_json",
-      style: "vivid",
-    });
+      size: MODEL_CONFIG.imageSize,
+      response_format: "b64_json" as const,
+      style: "vivid" as const,
+    };
+
+    // Only add quality parameter for DALL-E 3
+    const params = isQualitySupported
+      ? { ...baseParams, quality: MODEL_CONFIG.imageQuality }
+      : baseParams;
+
+    const response = await openaiClient.images.generate(params);
 
     const imageData = response.data?.[0];
     if (!imageData?.b64_json) {
@@ -366,5 +557,42 @@ export async function generateStyleImage(
   } catch (error) {
     console.error("Error generating style image:", error);
     throw new Error("Failed to generate style image");
+  }
+}
+
+export async function generateClothingItemImage(
+  itemName: string,
+  itemDescription: string,
+  colorPalette: string[],
+  aesthetic: string
+): Promise<string> {
+  try {
+    const baseParams = {
+      model: MODEL_CONFIG.image,
+      prompt: `Create a high-quality fashion photography image of a single clothing item: ${itemName}. ${itemDescription}. The item should be photographed in a clean, professional style with excellent lighting and composition. Use colors from this palette: ${colorPalette.join(
+        ", "
+      )}. The overall aesthetic should be ${aesthetic}. Show the item clearly and beautifully, either on a model or as a flat lay, with clean background. DO NOT include any text, labels, tags, or written content in the image. Focus solely on showcasing the clothing item's design, texture, and style.`,
+      n: 1,
+      size: MODEL_CONFIG.imageSize,
+      response_format: "b64_json" as const,
+      style: "vivid" as const,
+    };
+
+    // Only add quality parameter for DALL-E 3
+    const params = isQualitySupported
+      ? { ...baseParams, quality: MODEL_CONFIG.imageQuality }
+      : baseParams;
+
+    const response = await openaiClient.images.generate(params);
+
+    const imageData = response.data?.[0];
+    if (!imageData?.b64_json) {
+      throw new Error("No image data returned from OpenAI");
+    }
+
+    return `data:image/png;base64,${imageData.b64_json}`;
+  } catch (error) {
+    console.error("Error generating clothing item image:", error);
+    throw new Error("Failed to generate clothing item image");
   }
 }

@@ -64,6 +64,12 @@ export async function POST(request: NextRequest) {
           description: string;
           narrative: string;
           imageUrl: string;
+          clothingItems?: Array<{
+            name: string;
+            description: string;
+            category: string;
+            imageUrl: string;
+          }>;
           tags: string[];
           tastesInput: string[];
           enrichedTastes: string[];
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
             "Starting agentic style generation..."
           );
 
-          const { title, narrative, visualPrompt } =
+          const { title, narrative, visualPrompt, clothingItems } =
             await generateStyleNarrative(
               tastesInput,
               correlations,
@@ -142,6 +148,7 @@ export async function POST(request: NextRequest) {
             enrichedTastes,
             narrative,
             imageUrl,
+            clothingItems,
             tags: correlations.tags,
           });
 
@@ -152,6 +159,7 @@ export async function POST(request: NextRequest) {
             description: styleBoard.description,
             narrative: styleBoard.narrative,
             imageUrl: styleBoard.imageUrl,
+            clothingItems: styleBoard.clothingItems,
             tags: styleBoard.tags,
             tastesInput: styleBoard.tastesInput,
             enrichedTastes: styleBoard.enrichedTastes,

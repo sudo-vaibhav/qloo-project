@@ -6,11 +6,19 @@ import { Plus, Sparkles, Calendar, Share, Eye, Heart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+interface ClothingItem {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+}
+
 interface StyleBoard {
   id: string;
   title: string;
   description: string;
   imageUrl: string;
+  clothingItems?: ClothingItem[];
   tags: string[];
   tastesInput: string[];
   enrichedTastes: string[];

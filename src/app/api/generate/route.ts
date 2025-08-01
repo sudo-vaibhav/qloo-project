@@ -39,17 +39,15 @@ export async function POST(request: NextRequest) {
     }
 
     const correlations = await qlooAPI.getStyleCorrelations(tastesInput);
-    
+
     // Extract enriched taste entities from Qloo correlations
     const enrichedTastes = [
-      ...correlations.fashionEntities.map(e => e.name),
-      ...correlations.decorEntities.map(e => e.name)
+      ...correlations.fashionEntities.map((e) => e.name),
+      ...correlations.decorEntities.map((e) => e.name),
     ].slice(0, 15); // Limit to 15 enriched tastes
 
-    const { title, narrative, visualPrompt } = await generateStyleNarrative(
-      tastesInput,
-      correlations
-    );
+    const { title, narrative, visualPrompt, clothingItems } =
+      await generateStyleNarrative(tastesInput, correlations);
 
     const imageUrl = await generateStyleImage(visualPrompt);
 
@@ -61,6 +59,7 @@ export async function POST(request: NextRequest) {
       enrichedTastes,
       narrative,
       imageUrl,
+      clothingItems,
       tags: correlations.tags,
     });
 
@@ -72,6 +71,7 @@ export async function POST(request: NextRequest) {
         description: styleBoard.description,
         narrative: styleBoard.narrative,
         imageUrl: styleBoard.imageUrl,
+        clothingItems: styleBoard.clothingItems,
         tags: styleBoard.tags,
         tastesInput: styleBoard.tastesInput,
         enrichedTastes: styleBoard.enrichedTastes,

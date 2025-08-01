@@ -2,12 +2,20 @@
 
 import { useState, useCallback } from "react";
 
+interface ClothingItem {
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+}
+
 interface StyleBoard {
   id: string;
   title: string;
   description: string;
   narrative: string;
   imageUrl: string;
+  clothingItems?: ClothingItem[];
   tags: string[];
   tastesInput: string[];
   enrichedTastes: string[];
