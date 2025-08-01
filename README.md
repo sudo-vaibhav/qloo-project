@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TasteTailor - AI-Powered Style Discovery Platform
+
+Transform your cultural tastes into personalized fashion and decor recommendations through AI-powered taste analysis.
+
+## What it does
+
+" **Cultural Analysis**: Share your favorite movies, music, and artists to discover your unique aesthetic DNA
+" **AI Generation**: Creates personalized style narratives and visual mood boards using OpenAI
+" **Personal Gallery**: Save, refine, and share your style boards with friends and community
+" **Smart Recommendations**: Uses Qloo's Taste AI to correlate cultural preferences with fashion/decor items
+
+## Tech Stack
+
+**Frontend**: Next.js 15, React 19, TailwindCSS, TypeScript  
+**Backend**: MongoDB with Mongoose, Clerk authentication  
+**AI/APIs**: OpenAI GPT-4, Qloo Taste AI API  
+**Storage**: File uploads and image generation  
 
 ## Getting Started
 
-First, run the development server:
-
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Set up environment variables:
+```bash
+QLOO_API_KEY=your_qloo_api_key
+OPENAI_API_KEY=your_openai_api_key
+MONGODB_URI=your_mongodb_connection_string
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_key
+CLERK_SECRET_KEY=your_clerk_secret
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+" Create style boards based on cultural tastes
+" AI-generated clothing item recommendations  
+" Shareable style boards with unique URLs
+" Favorites system for saving preferred boards
+" User authentication with Clerk
+" Responsive design with modern UI
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Endpoints
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+" `POST /api/generate` - Generate style boards from cultural inputs
+" `GET/POST /api/styleboards` - Manage user style boards  
+" `GET/POST /api/favorites` - Handle favorite boards
+" `POST /api/generate-stream` - Streaming AI generation
